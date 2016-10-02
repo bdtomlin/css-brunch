@@ -2,6 +2,7 @@
 
 const postcss = require('postcss');
 const postcssModules = require('postcss-modules');
+const anymatch = require('anymatch');
 
 const cssModulify = (path, data, map, options) => {
   let json = {};
@@ -19,9 +20,16 @@ class CSSCompiler {
     if (cfg == null) cfg = {};
     this.config = cfg.plugins && cfg.plugins.css || {};
     this.modules = !!(this.config.modules || this.config.cssModules);
+
+    if (this.modules && this.config.modules.ignore) {
+      this.isIgnored = anymatch(this.config.modules.ignore);
+      delete this.config.modules.ignore;
+    } else {
+      this.isIgnored = anymatch([]);
+    }
   }
   compile(params) {
-    if (this.modules) {
+    if (this.modules && !this.isIgnored(params.path)) {
       const moduleOptions = this.modules === true ? {} : this.modules;
       return cssModulify(params.path, params.data, params.map, moduleOptions);
     } else {
